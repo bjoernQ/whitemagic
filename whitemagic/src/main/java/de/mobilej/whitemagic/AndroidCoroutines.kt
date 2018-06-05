@@ -176,8 +176,12 @@ internal fun asyncTaskCleanUp(componentName: String) {
     componentNameToComponent.remove(componentName)
     val removeFutures = currentBackgroundOperationsForComponent.remove(componentName)
     removeFutures?.forEach {
-        if (!it.isCancelled && !it.isDone) {
-            it.cancel(true)
+        try {
+            if (!it.isCancelled && !it.isDone) {
+                it.cancel(true)
+            }
+        } catch (e: Throwable){
+            // ignored
         }
     }
 
