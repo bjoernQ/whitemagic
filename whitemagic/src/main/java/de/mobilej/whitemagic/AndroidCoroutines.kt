@@ -11,8 +11,6 @@
    limitations under the License.
  */
 
-@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
-
 package de.mobilej.whitemagic
 
 import android.arch.lifecycle.Lifecycle
@@ -37,7 +35,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 
 var advancedAsyncTaskMockMode = false
 var advancedAsyncTaskDebugLogging = false
@@ -115,14 +113,11 @@ fun <C> asyncTask(componentName: ComponentId, c: suspend AdvancedAsyncTask<C>.()
 
     val controller = AdvancedAsyncTask<C>(componentName)
     val coroutine = c.createCoroutine(controller, completion = object : Continuation<Unit> {
+
+        override fun resumeWith(result: Result<Unit>) {
+        }
+
         override val context: CoroutineContext = EmptyCoroutineContext
-
-        override fun resume(value: Unit) {
-        }
-
-        override fun resumeWithException(exception: Throwable) {
-            throw exception
-        }
     })
 
     if (isComponentActive(componentName.name)) {
@@ -198,21 +193,21 @@ private fun asyncTaskResume(componentName: String, component: Any) {
     parkedForCurrentComponent?.forEach {
         log { "--- exec $it" }
         if (it.exception == null) {
-            handler.post({
+            handler.post {
                 if (isComponentActive(componentName)) {
                     it.coroutine.resume(it.result)
                 } else {
                     parkCoroutineForLaterExecution(componentName, it.coroutine, it.result, it.exception)
                 }
-            })
+            }
         } else {
-            handler.post({
+            handler.post {
                 if (isComponentActive(componentName)) {
                     it.coroutine.resumeWithException(it.exception)
                 } else {
                     parkCoroutineForLaterExecution(componentName, it.coroutine, it.result, it.exception)
                 }
-            })
+            }
         }
     }
 }
